@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
 
 public class TestSuite {
@@ -20,14 +21,16 @@ public class TestSuite {
     }
 
     @Test(priority = 1, description="simple test")
-    public void test() {
+    @Parameters({"dbUrl", "dbUser", "dbPass"})
+    public void test(String dbUrl, String dbUser, String dbPass) {
         logger.info("Test Cached db dataset started");
 
         CacheDataSet ds = new CacheDbDataSetImpl();
-        ds.setURL("DATABASE_URL");
-        ds.setUsername("DATABASE_USERNAME");
-        ds.setPassword("DATABASE_PASSWORD");
+        ds.setURL(dbUrl);
+        ds.setUsername(dbUser);
+        ds.setPassword(dbPass);
 
+        ds.setPageSize(50);
         ds.setCommand("SELECT row_id as id, name as full_name FROM test");
         ds.execute();
 
