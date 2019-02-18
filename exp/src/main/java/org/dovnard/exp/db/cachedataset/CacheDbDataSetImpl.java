@@ -1,9 +1,13 @@
 package org.dovnard.exp.db.cachedataset;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.Vector;
 
 public class CacheDbDataSetImpl implements CacheDataSet {
+    private static Logger logger = LoggerFactory.getLogger(CacheDbDataSetImpl.class);
     private RowHeader header;
     private Vector<Row> dataSet;
     private transient String username;
@@ -69,6 +73,7 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         int needDelete = lastReadedPageRows;
         boolean res = readData(false);
         if (res) {
+            logger.info("Load next page");
             for (int i = 0; i < needDelete; i++) {
                 dataSet.remove(0);
             }
@@ -84,6 +89,7 @@ public class CacheDbDataSetImpl implements CacheDataSet {
             int needDelete = lastReadedPageRows;
             res = readData(false);
             if (res) {
+                logger.info("Load previous page");
                 for (int i = 0; i < needDelete; i++) {
                     dataSet.remove(0);
                 }
@@ -93,24 +99,36 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return res;
     }
 
-    public boolean next() {
+    public boolean next(boolean withGoToNextPage) {
         if (cursorPos > 0 && activeRowIndex + 1 < dataSet.size()) {
             activeRowIndex++;
             return true;
         }
-        return nextPage();
+        if (withGoToNextPage)
+            return nextPage();
+        return false;
     }
 
-    public boolean previous() {
+    public boolean previous(boolean withGoToPreviousPage) {
         if (activeRowIndex - 1 > -1 && cursorPos > 0) {
             activeRowIndex--;
             return true;
         }
-        return prevPage();
+        if (withGoToPreviousPage)
+            return prevPage();
+        return false;
     }
 
     public int getLoadedRecords() {
         return dataSet.size();
+    }
+
+    public boolean first() {
+        if (dataSet.size() > 0) {
+            activeRowIndex = 0;
+            return true;
+        }
+        return false;
     }
 
     public String getString(int colIndex) {

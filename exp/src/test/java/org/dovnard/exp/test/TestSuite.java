@@ -36,10 +36,10 @@ public class TestSuite {
         ds.setCommand("SELECT row_id as id, name as full_name FROM test");
         ds.execute();
 
-        while (ds.next()) {
+        while (ds.next(true)) {
             logger.info("go next: " + ds.getString(0));
         }
-        while (ds.previous()) {
+        while (ds.previous(true)) {
             logger.info("go prev: " + ds.getString(0));
         }
 

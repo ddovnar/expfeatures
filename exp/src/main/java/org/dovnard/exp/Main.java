@@ -18,15 +18,44 @@ public class Main {
         Main app = new Main();
         app.testCacheDB();
     }
+    @Deprecated
+    public void testSimpleCacheDB() {
+        final Config config = Config.getInstance();
+
+        CacheDataSet ds = new CacheDbDataSetImpl();
+        ds.setURL(config.getProperty("dbUrl"));
+        ds.setUsername(config.getProperty("dbUser"));
+        ds.setPassword(config.getProperty("dbPass"));
+
+        ds.setPageSize(5);
+        ds.setCommand("SELECT row_id as id, name as full_name FROM test");
+        ds.execute();
+
+        boolean r = ds.first();
+        int proc = 0;
+        int pageReaded = 1;
+        while (r) {
+            System.out.println("=== Page " + pageReaded + " ===");
+
+            proc = 0;
+            while (proc < ds.getLoadedRecords()) {
+                System.out.println(proc + "). record: " + ds.getString(0));
+                r = ds.next(false);
+                proc++;
+            }
+
+            logger.info("Page readed: " + pageReaded);
+            pageReaded++;
+            r = ds.nextPage();
+        }
+    }
     public void testCacheDB() {
         logger.info("Invoke testCacheDB");
         final Config config = Config.getInstance();
-        System.out.println("Test Param1:" + config.getProperty("param1"));
 
         final ConsoleRunner console = new ConsoleRunner();
         console.setCommand(new CommandExec() {
             public void run() {
-                //System.out.println("Scanner: " + console.getScanner());
                 CacheDataSet ds = new CacheDbDataSetImpl();
                 ds.setURL(config.getProperty("dbUrl"));
                 ds.setUsername(config.getProperty("dbUser"));
@@ -37,14 +66,21 @@ public class Main {
                 ds.execute();
 
                 boolean quit = false;
-                boolean first = false;
-                while (!quit) {
-                    int processed = 0;
-                    while ((( !first && processed < ds.getLoadedRecords()) || ( first && processed < ds.getLoadedRecords()-1)) && ds.next()) {
-                        System.out.println("record: " + ds.getString(0));
-                        processed++;
+                boolean hasRows = ds.first();
+                int proc = 0;
+                int pageReaded = 1;
+                while (!quit && hasRows) {
+                    System.out.println("=== Page " + pageReaded + " ===");
+
+                    proc = 0;
+                    while (proc < ds.getLoadedRecords() && ds.next(false)) {
+                        System.out.println(proc + "). record: " + ds.getString(0));
+                        //r = ds.next(false);
+                        proc++;
                     }
-                    first = true;
+
+                    logger.info("Page readed: " + pageReaded);
+                    pageReaded++;
                     quit = !ds.nextPage();
 
                     console.askToQuit();
