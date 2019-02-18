@@ -1,0 +1,9 @@
+*~
+.DS_Store
+/.idea
+/app/lib
+/node_modules
+/platforms
+/plugins
+/www
+npm-debug.log
