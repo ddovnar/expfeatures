@@ -130,6 +130,13 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         }
         return false;
     }
+    public boolean last() {
+        if (dataSet.size() > 0) {
+            activeRowIndex = dataSet.size() - 1;
+            return true;
+        }
+        return false;
+    }
 
     public String getString(int colIndex) {
         if (activeRowIndex < 0 || dataSet.size() == 0) {

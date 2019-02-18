@@ -28,7 +28,7 @@ public class Main {
         ds.setPassword(config.getProperty("dbPass"));
 
         ds.setPageSize(5);
-        ds.setCommand("SELECT row_id as id, name as full_name FROM test");
+        ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = 1");
         ds.execute();
 
         boolean r = ds.first();
@@ -61,8 +61,8 @@ public class Main {
                 ds.setUsername(config.getProperty("dbUser"));
                 ds.setPassword(config.getProperty("dbPass"));
 
-                ds.setPageSize(20);
-                ds.setCommand("SELECT row_id as id, name as full_name FROM test");
+                ds.setPageSize(5);
+                ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = 1");
                 ds.execute();
 
                 boolean quit = false;
@@ -70,22 +70,37 @@ public class Main {
                 int proc = 0;
                 int pageReaded = 1;
                 while (!quit && hasRows) {
-                    System.out.println("=== Page " + pageReaded + " ===");
+                    System.out.println("=== Page " + pageReaded + " ===: " + ds.getLoadedRecords());
 
                     proc = 0;
-                    while (proc < ds.getLoadedRecords() && ds.next(false)) {
+                    while (proc < ds.getLoadedRecords()) {
                         System.out.println(proc + "). record: " + ds.getString(0));
                         //r = ds.next(false);
+                        ds.next(false);
                         proc++;
                     }
 
                     logger.info("Page readed: " + pageReaded);
                     pageReaded++;
-                    quit = !ds.nextPage();
 
-                    console.askToQuit();
-                    if (!quit) {
-                        quit = console.isExit();
+//                    console.askToQuit();
+//                    if (!quit) {
+//                        quit = console.isExit();
+//                    }
+                    String key = console.askKey("Enter key-command ( v - prevPage, n - nextPage ):");
+                    if (key.equalsIgnoreCase("n")) {
+                        if (!ds.nextPage())
+                            break;
+                    } else if (key.equalsIgnoreCase("v")) {
+                        if (!ds.prevPage())
+                            break;
+                        ds.first();
+                    } else {
+                        System.out.println("Unknown command");
+                        console.askToQuit();
+                        if (!quit) {
+                            quit = console.isExit();
+                        }
                     }
                 }
             }

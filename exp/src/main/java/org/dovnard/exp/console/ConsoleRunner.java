@@ -6,6 +6,7 @@ public class ConsoleRunner {
     private CommandExec command;
     private boolean exit = false;
     private Scanner scanner = new Scanner(System.in);
+
     public void setCommand(CommandExec cmd) {
         command = cmd;
     }
@@ -19,6 +20,10 @@ public class ConsoleRunner {
     }
     public boolean isExit() {
         return exit;
+    }
+    public String askKey(String message) {
+        System.out.println(message);
+        return scanner.nextLine();
     }
     public void askToQuit() {
         System.out.println("Do you want to quit (Y/N)?: ");
