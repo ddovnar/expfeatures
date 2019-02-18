@@ -16,6 +16,7 @@ public interface CacheDataSet {
     public boolean prevPage();
     public boolean next();
     public boolean previous();
+    public int getLoadedRecords();
 
     public String getString(int colIndex);
 }

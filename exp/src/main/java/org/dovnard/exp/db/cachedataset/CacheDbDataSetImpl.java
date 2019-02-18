@@ -109,6 +109,10 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return prevPage();
     }
 
+    public int getLoadedRecords() {
+        return dataSet.size();
+    }
+
     public String getString(int colIndex) {
         if (activeRowIndex < 0 || dataSet.size() == 0) {
             throw new RuntimeException("Empty dataset");
