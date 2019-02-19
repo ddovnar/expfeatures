@@ -3,25 +3,35 @@ package org.dovnard.exp.db.cachedataset;
 import java.util.Vector;
 
 public class RowHeader {
-    private Vector<String> columnNames;
+    private Vector<RowHeaderItem> headerItems;
     public RowHeader() {
-        columnNames = new Vector<String>();
+        headerItems = new Vector<RowHeaderItem>();
     }
-    public RowHeader(String[] cols) {
+    /*public RowHeader(String[] cols) {
         for (String c: cols) {
             columnNames.add(c);
         }
-    }
-    public void addColumnName(String name) {
-        columnNames.add(name);
+    }*/
+    public void addHeaderItem(RowHeaderItem item) {
+        headerItems.add(item);
     }
     public Vector<String> getColumnNames() {
-        return columnNames;
+        Vector<String> cols = new Vector<String>();
+        for (RowHeaderItem item : headerItems) {
+            cols.add(item.getColumnName());
+        }
+        return cols;
+    }
+    public Vector<RowHeaderItem> getHeaderItems() {
+        return headerItems;
     }
     public String getColumnName(int index) {
-        return columnNames.get(index);
+        return headerItems.get(index).getColumnName();
+    }
+    public RowHeaderItem getHeaderItem(int index) {
+        return headerItems.get(index);
     }
     public void release() {
-        columnNames.clear();
+        headerItems.clear();
     }
 }

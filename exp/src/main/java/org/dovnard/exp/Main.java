@@ -4,10 +4,15 @@ import org.dovnard.exp.console.CommandExec;
 import org.dovnard.exp.console.ConsoleRunner;
 import org.dovnard.exp.db.cachedataset.CacheDataSet;
 import org.dovnard.exp.db.cachedataset.CacheDbDataSetImpl;
+import org.dovnard.exp.db.cachedataset.RowHeader;
+import org.dovnard.exp.db.cachedataset.RowHeaderItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.dovnard.exp.config.Config;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -18,9 +23,10 @@ public class Main {
         Main app = new Main();
         //app.testCacheDB();
         //app.testSimpleCacheDB();
-        app.testDelete();
+        //app.testDeleteAll();
+        app.testAdd();
     }
-    public void testDelete() {
+    public void testAdd() {
         final Config config = Config.getInstance();
 
         CacheDataSet ds = new CacheDbDataSetImpl();
@@ -29,8 +35,38 @@ public class Main {
         ds.setPassword(config.getProperty("dbPass"));
 
         ds.setPageSize(5);
-        ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = ?");
-        ds.addParameter("marked", 1);
+        ds.setCommand("SELECT row_id as id, name as full_name FROM test");
+        ds.setRowIdColumnIndex(0);
+        ds.setRowIdColumnName("row_id");
+        List<String> cols = new ArrayList<String>();
+        cols.add("row_id");
+        cols.add("name");
+        ds.setRealColumnNames(cols);
+        ds.execute();
+
+        RowHeader header = ds.getRowHeader();
+        for (RowHeaderItem item : header.getHeaderItems()) {
+            logger.info("HeaderItem: |" + item.getColumnName() + "|" + item.getRealTableColumnName() + "|" + item.getTableName());
+        }
+//        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+//        ds.add();
+//        ds.setValue("id", "1");
+//        ds.setValue("full_name", "test");
+
+        //logger.info("Record: " + ds.getString(0));
+    }
+    public void testDeleteAll() {
+        final Config config = Config.getInstance();
+
+        CacheDataSet ds = new CacheDbDataSetImpl();
+        ds.setURL(config.getProperty("dbUrl"));
+        ds.setUsername(config.getProperty("dbUser"));
+        ds.setPassword(config.getProperty("dbPass"));
+
+        ds.setPageSize(5);
+//        ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = ?");
+//        ds.addParameter("marked", 1);
+        ds.setCommand("SELECT row_id as id, name as full_name FROM test");
         ds.setRowIdColumnIndex(0);
         ds.setRowIdColumnName("row_id");
         ds.execute();

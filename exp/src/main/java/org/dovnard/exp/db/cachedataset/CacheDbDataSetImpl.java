@@ -4,10 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 public class CacheDbDataSetImpl implements CacheDataSet {
     private static Logger logger = LoggerFactory.getLogger(CacheDbDataSetImpl.class);
@@ -25,11 +22,13 @@ public class CacheDbDataSetImpl implements CacheDataSet {
     private String tableName;
     private int rowIdColumnIndex = 0;
     private String rowIdColumnName;
+    private List<String> realColNames;
 
     public CacheDbDataSetImpl() {
         header = new RowHeader();
         dataSet = new Vector<Row>();
         params = new LinkedHashMap<String, Object>();
+        realColNames = new ArrayList<String>();
 
         pageSize = 5;
         cursorPos = 0;
@@ -42,6 +41,7 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         dataSet.clear();
         header.release();
         params.clear();
+        realColNames.clear();
     }
 
     public void setURL(String url) {
@@ -196,6 +196,17 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         }
         return res;
     }
+
+    public boolean add() {
+        Row row = new Row();
+        for (String cn : header.getColumnNames()) {
+            row.addCellData(null);
+        }
+        dataSet.add(row);
+        activeRowIndex++;
+        return true;
+    }
+
     public boolean delete() {
         if (activeRowIndex > -1 && dataSet.size() > 0) {
             Map<String, Object> cmdParams = new LinkedHashMap<String, Object>();
@@ -229,6 +240,44 @@ public class CacheDbDataSetImpl implements CacheDataSet {
 
     public void setRowIdColumnName(String name) {
         rowIdColumnName = name;
+    }
+
+    public void setRealColumnNames(List<String> colNames) {
+        realColNames = colNames;
+        /*int idx = 0;
+        for (String col : colNames) {
+            header.getHeaderItem(idx).setRealTableColumnName(col);
+            idx++;
+        }*/
+//        Iterator<Map.Entry<String, String>> it = colNames.entrySet().iterator();
+//        int idx = 0;
+//        while (it.hasNext()) {
+//            Map.Entry<String, String> pair = it.next();
+//            header.getHeaderItem(idx).setRealTableColumnName(pair.getValue());
+//        }
+    }
+
+    public boolean setValue(String colName, String value) {
+        //Cell cell = dataSet.get(activeRowIndex).getCellByColumnName(colName);
+//        for (Cell cell : dataSet.get(activeRowIndex).getRowCells()) {
+//            if (cell.)
+//        }
+        int colCnt = 0;
+        int colIdx = -1;
+        for (String cn : header.getColumnNames()) {
+            if (cn.equalsIgnoreCase(colName)) {
+                colIdx = colCnt;
+                break;
+            }
+            colCnt++;
+        }
+        if (colIdx == -1) {
+            throw new RuntimeException("Column <" + colName + "> not founded in dataset");
+        }
+
+        Cell cell = dataSet.get(activeRowIndex).getRowCells().get(colIdx);
+        cell.setValue(value);
+        return true;
     }
 
     public String getString(int colIndex) {
@@ -288,8 +337,13 @@ public class CacheDbDataSetImpl implements CacheDataSet {
                 tableName = meta.getTableName(rowIdColumnIndex + 1);
 
                 for (int i = 1; i <= meta.getColumnCount(); i++) {
-                    logger.info("Column: " + meta.getColumnName(i) + "|" + meta.getColumnLabel(i));
-                    header.addColumnName(meta.getColumnLabel(i));
+                    logger.info("Column: " + meta.getColumnName(i) + "|" + meta.getColumnLabel(i) + "|" + meta.getCatalogName(i) + "|" + meta.getColumnClassName(i) + "|" + meta.getSchemaName(i));
+                    //header.addColumnName(meta.getColumnLabel(i));
+                    if (realColNames.size() > i - 1) {
+                        header.addHeaderItem(new RowHeaderItem(meta.getColumnName(i), realColNames.get(i - 1), meta.getTableName(i)));
+                    } else {
+                        header.addHeaderItem(new RowHeaderItem(meta.getColumnName(i), null, meta.getTableName(i)));
+                    }
                 }
             }
 

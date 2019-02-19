@@ -1,5 +1,7 @@
 package org.dovnard.exp.db.cachedataset;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
@@ -31,6 +33,9 @@ public interface CacheDataSet {
 
     public boolean executeCommand(String cmd, Map<String, Object> cmdParams);
     public boolean delete();
+    public boolean add();
+    public void setRealColumnNames(List<String> colNames);
 
     public String getString(int colIndex);
+    public boolean setValue(String colName, String value);
 }

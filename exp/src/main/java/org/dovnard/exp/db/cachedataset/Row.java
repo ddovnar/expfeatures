@@ -16,4 +16,12 @@ public class Row {
     public Cell getCell(int index) {
         return rowData.get(index);
     }
+    public Vector<Cell> getRowCells() {
+        return rowData;
+    }
+//    public Cell getCellByColumnName(String colName) {
+//        for (Cell cell : rowData) {
+//            if (cell.)
+//        }
+//    }
 }
