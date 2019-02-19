@@ -16,7 +16,8 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Main application running");
         Main app = new Main();
-        app.testCacheDB();
+        //app.testCacheDB();
+        app.testSimpleCacheDB();
     }
     @Deprecated
     public void testSimpleCacheDB() {
@@ -27,8 +28,12 @@ public class Main {
         ds.setUsername(config.getProperty("dbUser"));
         ds.setPassword(config.getProperty("dbPass"));
 
+        logger.info("testSimpleCacheDB");
+
         ds.setPageSize(5);
-        ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = 1");
+        ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = ? and name=?");
+        ds.addParameter("marked", 1);
+        ds.addParameter("n", "name5");
         ds.execute();
 
         boolean r = ds.first();

@@ -9,6 +9,7 @@
             <class name="org.dovnard.exp.test.TestSuite">
                 <methods>
                     <include name="test" />
+                    <include name="testPagination" />
                 </methods>
             </class>
         </classes>

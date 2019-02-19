@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Vector;
 
 public class CacheDbDataSetImpl implements CacheDataSet {
@@ -18,10 +21,13 @@ public class CacheDbDataSetImpl implements CacheDataSet {
     private int cursorPos;
     private int lastReadedPageRows = 0;
     private int activeRowIndex = -1;
+    private Map<String, Object> params;
 
     public CacheDbDataSetImpl() {
         header = new RowHeader();
         dataSet = new Vector<Row>();
+        params = new LinkedHashMap<String, Object>();
+
         pageSize = 5;
         cursorPos = 0;
     }
@@ -32,6 +38,7 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         }
         dataSet.clear();
         header.release();
+        params.clear();
     }
 
     public void setURL(String url) {
@@ -119,6 +126,14 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return false;
     }
 
+    public boolean next() {
+        return next(true);
+    }
+
+    public boolean previous() {
+        return previous(true);
+    }
+
     public int getLoadedRecords() {
         return dataSet.size();
     }
@@ -138,11 +153,35 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return false;
     }
 
+    public void addParameter(String name, int v) {
+        params.put(name, v);
+    }
+
+    public void addParameter(String name, String v) {
+        params.put(name, v);
+    }
+
     public String getString(int colIndex) {
         if (activeRowIndex < 0 || dataSet.size() == 0) {
             throw new RuntimeException("Empty dataset");
         }
         return dataSet.get(activeRowIndex).getCell(colIndex).getValue().toString();
+    }
+
+    private void fillParameters(PreparedStatement stat) throws SQLException {
+        logger.info("Process parameters");
+        Iterator<Map.Entry<String, Object>> it = params.entrySet().iterator();
+        int idx = 1;
+        while (it.hasNext()) {
+            Map.Entry<String, Object> pair = it.next();
+            if (pair.getValue() instanceof Integer) {
+                stat.setInt(idx, ((Integer) pair.getValue()).intValue());
+            } else if (pair.getValue() instanceof String) {
+                stat.setString(idx, (String) pair.getValue());
+            }
+            idx++;
+            logger.info("Parameter: " + pair.getKey() + "=" + pair.getValue());
+        }
     }
 
     private boolean readData(boolean onExecute) {
@@ -151,8 +190,11 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         try {
             conn = DriverManager.getConnection(url, username, password);
 
-            Statement statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet result = statement.executeQuery(cmd);
+            //Statement statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            //ResultSet result = statement.executeQuery(cmd);
+            PreparedStatement statement = conn.prepareStatement(cmd, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            fillParameters(statement);
+            ResultSet result = statement.executeQuery();
 
             if (onExecute) {
                 ResultSetMetaData meta = result.getMetaData();

@@ -14,11 +14,16 @@ public interface CacheDataSet {
     public void execute();
     public boolean nextPage();
     public boolean prevPage();
+    public boolean next();
+    public boolean previous();
     public boolean next(boolean withGoToNextPage);
     public boolean previous(boolean withGoToPreviousPage);
     public int getLoadedRecords();
     public boolean first();
     public boolean last();
+
+    public void addParameter(String name, int v);
+    public void addParameter(String name, String v);
 
     public String getString(int colIndex);
 }
