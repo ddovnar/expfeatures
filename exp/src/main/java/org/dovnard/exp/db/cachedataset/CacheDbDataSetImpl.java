@@ -22,6 +22,9 @@ public class CacheDbDataSetImpl implements CacheDataSet {
     private int lastReadedPageRows = 0;
     private int activeRowIndex = -1;
     private Map<String, Object> params;
+    private String tableName;
+    private int rowIdColumnIndex = 0;
+    private String rowIdColumnName;
 
     public CacheDbDataSetImpl() {
         header = new RowHeader();
@@ -153,12 +156,79 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return false;
     }
 
+    public int getActiveRecordIndex() {
+        return activeRowIndex;
+    }
+
     public void addParameter(String name, int v) {
         params.put(name, v);
     }
 
     public void addParameter(String name, String v) {
         params.put(name, v);
+    }
+    public boolean executeCommand(String cmd, Map<String, Object> cmdParams) {
+        //if (1 == 1) return true;
+
+        boolean res = false;
+        logger.info("Invoke command: " + cmd);
+        Connection conn = null;
+        PreparedStatement statement = null;
+        try {
+            conn = DriverManager.getConnection(url, username, password);
+            statement = conn.prepareStatement(cmd, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            fillParameters(statement, cmdParams);
+            int cmdRes = statement.executeUpdate();
+            logger.info("Command result: " + cmdRes);
+            res = true;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            res = false;
+        } finally {
+            try {
+                if (statement != null)
+                    statement.close();
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException ex) {
+            }
+        }
+        return res;
+    }
+    public boolean delete() {
+        if (activeRowIndex > -1 && dataSet.size() > 0) {
+            Map<String, Object> cmdParams = new LinkedHashMap<String, Object>();
+            cmdParams.put("id", dataSet.get(activeRowIndex).getCell(rowIdColumnIndex).getValue());
+            if (executeCommand("delete from " + tableName + " where " + rowIdColumnName + "=?", cmdParams)) {
+                dataSet.remove(activeRowIndex);
+                lastReadedPageRows--;
+                cursorPos--;
+                if (activeRowIndex > 0) {
+                    activeRowIndex--;
+                } else {
+                    if (dataSet.size() == 0) {
+                    //    activeRowIndex++;
+                    //} else {
+                        if (nextPage()) {
+                            activeRowIndex = 0;
+                        } else {
+                            activeRowIndex = -1;
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void setRowIdColumnIndex(int colIdx) {
+        rowIdColumnIndex = colIdx;
+    }
+
+    public void setRowIdColumnName(String name) {
+        rowIdColumnName = name;
     }
 
     public String getString(int colIndex) {
@@ -168,9 +238,9 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return dataSet.get(activeRowIndex).getCell(colIndex).getValue().toString();
     }
 
-    private void fillParameters(PreparedStatement stat) throws SQLException {
+    private void fillParameters(PreparedStatement stat, Map<String, Object> statParams) throws SQLException {
         logger.info("Process parameters");
-        Iterator<Map.Entry<String, Object>> it = params.entrySet().iterator();
+        Iterator<Map.Entry<String, Object>> it = statParams.entrySet().iterator();
         int idx = 1;
         while (it.hasNext()) {
             Map.Entry<String, Object> pair = it.next();
@@ -182,6 +252,22 @@ public class CacheDbDataSetImpl implements CacheDataSet {
             idx++;
             logger.info("Parameter: " + pair.getKey() + "=" + pair.getValue());
         }
+    }
+    private void fillParameters(PreparedStatement stat) throws SQLException {
+        fillParameters(stat, params);
+        /*logger.info("Process parameters");
+        Iterator<Map.Entry<String, Object>> it = params.entrySet().iterator();
+        int idx = 1;
+        while (it.hasNext()) {
+            Map.Entry<String, Object> pair = it.next();
+            if (pair.getValue() instanceof Integer) {
+                stat.setInt(idx, ((Integer) pair.getValue()).intValue());
+            } else if (pair.getValue() instanceof String) {
+                stat.setString(idx, (String) pair.getValue());
+            }
+            idx++;
+            logger.info("Parameter: " + pair.getKey() + "=" + pair.getValue());
+        }*/
     }
 
     private boolean readData(boolean onExecute) {
@@ -199,7 +285,10 @@ public class CacheDbDataSetImpl implements CacheDataSet {
             if (onExecute) {
                 ResultSetMetaData meta = result.getMetaData();
 
+                tableName = meta.getTableName(rowIdColumnIndex + 1);
+
                 for (int i = 1; i <= meta.getColumnCount(); i++) {
+                    logger.info("Column: " + meta.getColumnName(i) + "|" + meta.getColumnLabel(i));
                     header.addColumnName(meta.getColumnLabel(i));
                 }
             }

@@ -17,7 +17,45 @@ public class Main {
         System.out.println("Main application running");
         Main app = new Main();
         //app.testCacheDB();
-        app.testSimpleCacheDB();
+        //app.testSimpleCacheDB();
+        app.testDelete();
+    }
+    public void testDelete() {
+        final Config config = Config.getInstance();
+
+        CacheDataSet ds = new CacheDbDataSetImpl();
+        ds.setURL(config.getProperty("dbUrl"));
+        ds.setUsername(config.getProperty("dbUser"));
+        ds.setPassword(config.getProperty("dbPass"));
+
+        ds.setPageSize(5);
+        ds.setCommand("SELECT row_id as id, name as full_name FROM test where marked = ?");
+        ds.addParameter("marked", 1);
+        ds.setRowIdColumnIndex(0);
+        ds.setRowIdColumnName("row_id");
+        ds.execute();
+
+        /*if (ds.first()) {
+            logger.info("Record: " + ds.getString(0) + ", recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            ds.delete();
+            logger.info("1After delete, recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            ds.delete();
+            logger.info("2After delete, recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            ds.delete();
+            logger.info("3After delete, recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            ds.delete();
+            logger.info("4After delete, recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            ds.delete();
+            logger.info("5After delete, recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        }*/
+        int deletedCnt = 0;
+        while (ds.first()) {
+            ds.delete();
+            logger.info("After delete, recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            deletedCnt++;
+        }
+        logger.info("Deleted recs: " + deletedCnt);
+        ds.release();
     }
     @Deprecated
     public void testSimpleCacheDB() {
