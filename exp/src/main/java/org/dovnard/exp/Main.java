@@ -49,10 +49,10 @@ public class Main {
             logger.info("HeaderItem: |" + item.getColumnName() + "|" + item.getRealTableColumnName() + "|" + item.getTableName());
         }
 //        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
-//        ds.add();
-//        ds.setValue("id", "1");
-//        ds.setValue("full_name", "test");
-
+        ds.add();
+        ds.setValue("id", "1");
+        ds.setValue("full_name", "test");
+        ds.save();
         //logger.info("Record: " + ds.getString(0));
     }
     public void testDeleteAll() {

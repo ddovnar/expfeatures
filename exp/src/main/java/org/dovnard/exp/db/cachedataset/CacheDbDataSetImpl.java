@@ -64,7 +64,7 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         return header;
     }
 
-    public Vector<String> getColumnNames() {
+    public ArrayList<String> getColumnNames() {
         return header.getColumnNames();
     }
 
@@ -199,12 +199,69 @@ public class CacheDbDataSetImpl implements CacheDataSet {
 
     public boolean add() {
         Row row = new Row();
+        row.setMarkedNew(true);
         for (String cn : header.getColumnNames()) {
             row.addCellData(null);
         }
         dataSet.add(row);
         activeRowIndex++;
         return true;
+    }
+
+    public boolean save() {
+        StringBuilder sql = new StringBuilder();
+        StringBuilder sqlCols = new StringBuilder();
+        Map<String, Object> cmdParams = new LinkedHashMap<String, Object>();
+        //cmdParams.put("id", "");
+        Row row = dataSet.get(activeRowIndex);
+        if (row.isMarkedNew()) {
+            sql.append("insert into ");
+            sql.append(tableName);
+            sql.append("(");
+        } else {
+            sql.append("update ");
+            sql.append(tableName);
+            sql.append(" set ");
+        }
+        RowHeader header = getRowHeader();
+        int colIdx = 0;
+        for (RowHeaderItem item : header.getHeaderItems()) {
+            if (row.isMarkedNew()) {
+                sql.append(item.getRealTableColumnName());
+                sqlCols.append("?");
+            } else {
+                if (item.getRealTableColumnName().equalsIgnoreCase(rowIdColumnName)) {
+                    colIdx++;
+                    continue;
+                }
+                sql.append(item.getRealTableColumnName());
+                sql.append("=?");
+            }
+            cmdParams.put(item.getRealTableColumnName(), row.getCell(colIdx).getValue());
+            if (colIdx < header.getHeaderItems().size() - 1) {
+                if (row.isMarkedNew()) {
+                    sqlCols.append(",");
+                }
+                sql.append(",");
+            }
+            colIdx++;
+        }
+        if (row.isMarkedNew()) {
+            sql.append(")");
+            sql.append(" values(");
+            sql.append(sqlCols.toString());
+            sql.append(")");
+        } else {
+            sql.append(" where ");
+            sql.append(rowIdColumnName);
+            sql.append("=?");
+            cmdParams.put("row_id", row.getCell(rowIdColumnIndex).getValue());
+        }
+        logger.info(sql.toString());
+        if (executeCommand(sql.toString(), cmdParams)) {
+            return true;
+        }
+        return false;
     }
 
     public boolean delete() {

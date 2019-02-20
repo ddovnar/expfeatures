@@ -1,11 +1,11 @@
 package org.dovnard.exp.db.cachedataset;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 public class RowHeader {
-    private Vector<RowHeaderItem> headerItems;
+    private ArrayList<RowHeaderItem> headerItems;
     public RowHeader() {
-        headerItems = new Vector<RowHeaderItem>();
+        headerItems = new ArrayList<RowHeaderItem>();
     }
     /*public RowHeader(String[] cols) {
         for (String c: cols) {
@@ -15,14 +15,14 @@ public class RowHeader {
     public void addHeaderItem(RowHeaderItem item) {
         headerItems.add(item);
     }
-    public Vector<String> getColumnNames() {
-        Vector<String> cols = new Vector<String>();
+    public ArrayList<String> getColumnNames() {
+        ArrayList<String> cols = new ArrayList<String>();
         for (RowHeaderItem item : headerItems) {
             cols.add(item.getColumnName());
         }
         return cols;
     }
-    public Vector<RowHeaderItem> getHeaderItems() {
+    public ArrayList<RowHeaderItem> getHeaderItems() {
         return headerItems;
     }
     public String getColumnName(int index) {
