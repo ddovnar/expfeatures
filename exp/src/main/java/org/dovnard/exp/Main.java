@@ -49,16 +49,42 @@ public class Main {
             logger.info("HeaderItem: |" + item.getColumnName() + "|" + item.getRealTableColumnName() + "|" + item.getTableName());
         }
         logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
-        ds.add();
-        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
-        ds.setValue("id", "1");
-        ds.setValue("full_name", "test");
-        if (ds.save()) {
-            logger.info("New record added success");
-        } else {
-            logger.info("New record added failed");
+        for (int i = 0; i < 10; i++) {
+            ds.add();
+            ds.setValue("id", "row_" + (i + 10));
+            ds.setValue("full_name", "item" + (i + 10));
+            ds.save();
+            logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+            showRecords(ds);
         }
+//        ds.add();
+//        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+//        ds.setValue("id", "1");
+//        ds.setValue("full_name", "test");
+//        if (ds.save()) {
+//            logger.info("New record added success");
+//        } else {
+//            logger.info("New record added failed");
+//        }
         //logger.info("Record: " + ds.getString(0));
+    }
+    public void showRecords(CacheDataSet d) {
+        StringBuilder s = new StringBuilder();
+
+        for (int i = 0; i < d.getLoadedRecords(); i++) {
+            s.setLength(0);
+            int j = 0;
+            for (RowHeaderItem h : d.getRowHeader().getHeaderItems()) {
+                s.append(h.getColumnName());
+                s.append("(");
+                //s.append(1);
+                s.append(d.getRowByIndex(i).getCell(j).getValue());
+                s.append(")");
+                s.append("|");
+                j++;
+            }
+            logger.info("----->[" + s.toString() + "]");
+        }
     }
     public void testDeleteAll() {
         final Config config = Config.getInstance();

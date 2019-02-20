@@ -203,8 +203,37 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         for (String cn : header.getColumnNames()) {
             row.addCellData(null);
         }
-        dataSet.add(row);
-        activeRowIndex = dataSet.size() - 1;
+        /*if (activeRowIndex == -1) {
+            if (dataSet.size() > 0) {
+                activeRowIndex = 0;
+            }
+        }*/
+        if (activeRowIndex == -1 || (activeRowIndex + 1 >= pageSize)) {
+            if (!nextPage()) {
+                logger.info("add method: try to clean dataset: " + getLoadedRecords());
+                dataSet.clear();
+            }
+            dataSet.insertElementAt(row, 0);
+            if (dataSet.size() > pageSize) {
+                dataSet.remove(dataSet.size() - 1);
+            }
+            activeRowIndex = 0;
+        } else {
+//            if (activeRowIndex == -1) {
+//
+//            } else {
+                logger.info("new row added to the end of dataset");
+                if (dataSet.size() == pageSize) {
+                    //remove one last row for add new
+                    dataSet.remove(dataSet.size() - 1);
+                }
+                //dataSet.add(row);
+                //activeRowIndex = dataSet.size() - 1;
+                dataSet.insertElementAt(row, activeRowIndex + 1);
+                activeRowIndex = activeRowIndex + 1;
+//            }
+        }
+        cursorPos++;
         return true;
     }
 
@@ -297,6 +326,10 @@ public class CacheDbDataSetImpl implements CacheDataSet {
 
     public void setRowIdColumnName(String name) {
         rowIdColumnName = name;
+    }
+
+    public Row getRowByIndex(int idx) {
+        return dataSet.get(idx);
     }
 
     public void setRealColumnNames(List<String> colNames) {

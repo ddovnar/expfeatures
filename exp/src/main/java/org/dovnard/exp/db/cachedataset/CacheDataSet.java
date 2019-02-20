@@ -35,6 +35,7 @@ public interface CacheDataSet {
     public boolean delete();
     public boolean add();
     public boolean save();
+    public Row getRowByIndex(int idx);
 
     public void setRealColumnNames(List<String> colNames);
 
