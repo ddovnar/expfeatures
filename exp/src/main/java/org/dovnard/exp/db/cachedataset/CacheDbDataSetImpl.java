@@ -204,7 +204,7 @@ public class CacheDbDataSetImpl implements CacheDataSet {
             row.addCellData(null);
         }
         dataSet.add(row);
-        activeRowIndex++;
+        activeRowIndex = dataSet.size() - 1;
         return true;
     }
 
@@ -331,9 +331,10 @@ public class CacheDbDataSetImpl implements CacheDataSet {
         if (colIdx == -1) {
             throw new RuntimeException("Column <" + colName + "> not founded in dataset");
         }
-
-        Cell cell = dataSet.get(activeRowIndex).getRowCells().get(colIdx);
-        cell.setValue(value);
+        Row row = dataSet.get(activeRowIndex);
+        //row.setChanged(true); change detector by Cell
+        Cell cell = row.getRowCells().get(colIdx);
+        cell.setValue(value, false, row, colName);
         return true;
     }
 

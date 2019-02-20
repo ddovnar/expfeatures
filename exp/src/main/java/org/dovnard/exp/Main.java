@@ -48,11 +48,16 @@ public class Main {
         for (RowHeaderItem item : header.getHeaderItems()) {
             logger.info("HeaderItem: |" + item.getColumnName() + "|" + item.getRealTableColumnName() + "|" + item.getTableName());
         }
-//        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
         ds.add();
+        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
         ds.setValue("id", "1");
         ds.setValue("full_name", "test");
-        ds.save();
+        if (ds.save()) {
+            logger.info("New record added success");
+        } else {
+            logger.info("New record added failed");
+        }
         //logger.info("Record: " + ds.getString(0));
     }
     public void testDeleteAll() {
