@@ -6,14 +6,19 @@ import org.dovnard.exp.db.cachedataset.CacheDataSet;
 import org.dovnard.exp.db.cachedataset.CacheDbDataSetImpl;
 import org.dovnard.exp.db.cachedataset.RowHeader;
 import org.dovnard.exp.db.cachedataset.RowHeaderItem;
+import org.dovnard.exp.web.RequestProcessor;
+import org.dovnard.exp.web.WebServer;
+import org.dovnard.exp.web.WebServerAlone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.dovnard.exp.config.Config;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.*;
 
 public class Main {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -24,7 +29,84 @@ public class Main {
         //app.testCacheDB();
         //app.testSimpleCacheDB();
         //app.testDeleteAll();
-        app.testAdd();
+        //app.testAdd();
+        app.testWebServerAlone();
+        //app.testWebServer();
+    }
+    public void testWebServerAlone() {
+        try {
+            try (WebServerAlone server = new WebServerAlone()) {
+                server.setRequestProcessor(new RequestProcessor() {
+                    @Override
+                    public void process(BufferedReader in, PrintWriter out) throws IOException {
+                        String line;
+                        while ((line = in.readLine()) != null) {
+                            if (line.length() == 0)
+                                break;
+                            out.print("BODY:" + line + "\r\n");
+                        }
+                    }
+                });
+                server.run();
+            }
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    public void testWebServer() {
+        try {
+            final WebServer srv = new WebServer(8080);
+
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                public void run() {
+                    logger.info("In shutdown hook");
+                    try {
+                        srv.close();
+                    } catch(IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }, "Shutdown-thread"));
+
+            srv.run(new CommandExec() {
+                public void run() {
+                    logger.info("Command runned");
+                    try {
+                        while (true) {
+                            logger.info("Start request");
+                            try (Socket socket = srv.accept()) {
+                                logger.info("in accept");
+                                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                                Date today = new Date();
+
+                                out.print("HTTP/1.1 200 \r\n");
+                                out.print("Content-Type: text/plain\r\n"); // The type of data
+                                out.print("Connection: close\r\n"); // Will close stream
+                                out.print("\r\n"); // End of headers
+                                logger.info("before process");
+                                String line;
+                                while ((line = in.readLine()) != null) {
+                                    if (line.length() == 0)
+                                        break;
+                                    out.print("BODY:" + line + "\r\n");
+                                }
+                                logger.info("after process");
+                                out.close();
+                                in.close();
+                            }
+                        }
+                    } catch(IOException ex) {
+                        ex.printStackTrace();
+                        try {
+                            srv.close();
+                        } catch(IOException e2) {e2.printStackTrace();}
+                    }
+                }
+            });
+        } catch(IOException ex) {
+            ex.printStackTrace();
+        }
     }
     public void testAdd() {
         final Config config = Config.getInstance();
@@ -49,14 +131,44 @@ public class Main {
             logger.info("HeaderItem: |" + item.getColumnName() + "|" + item.getRealTableColumnName() + "|" + item.getTableName());
         }
         logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
-        for (int i = 0; i < 10; i++) {
-            ds.add();
-            ds.setValue("id", "row_" + (i + 10));
-            ds.setValue("full_name", "item" + (i + 10));
-            ds.save();
-            logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
-            showRecords(ds);
-        }
+
+        ds.first();
+        logger.info("first>recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        showRecords(ds);
+
+        ds.next(false);
+        logger.info("first>recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        showRecords(ds);
+
+        ds.next(false);
+        logger.info("first>recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        showRecords(ds);
+
+        ds.next(false);
+        logger.info("first>recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        showRecords(ds);
+
+        ds.next(false);
+        logger.info("first>recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        showRecords(ds);
+
+        ds.add();
+        ds.setValue("id", "row_" + "end1");
+        ds.setValue("full_name", "item" + "end1");
+        ds.save();
+        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+        showRecords(ds);
+
+        //loop adding rows from first or without position
+//        for (int i = 0; i < 10; i++) {
+//            ds.add();
+//            ds.setValue("id", "row_" + (i + 10));
+//            ds.setValue("full_name", "item" + (i + 10));
+//            ds.save();
+//            logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
+//            showRecords(ds);
+//        }
+        //~loop adding rows from first or without position
 //        ds.add();
 //        logger.info("recs: " + ds.getLoadedRecords() + ", actRowIdx: " + ds.getActiveRecordIndex());
 //        ds.setValue("id", "1");
@@ -83,7 +195,11 @@ public class Main {
                 s.append("|");
                 j++;
             }
-            logger.info("----->[" + s.toString() + "]");
+            if (i == d.getActiveRecordIndex()) {
+                logger.info("----->[" + s.toString() + "] *");
+            } else {
+                logger.info("----->[" + s.toString() + "]");
+            }
         }
     }
     public void testDeleteAll() {
