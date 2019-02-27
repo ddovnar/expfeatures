@@ -9,6 +9,8 @@ import org.dovnard.exp.db.cachedataset.RowHeaderItem;
 import org.dovnard.exp.web.RequestProcessor;
 import org.dovnard.exp.web.WebServer;
 import org.dovnard.exp.web.WebServerAlone;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.dovnard.exp.config.Config;
@@ -30,21 +32,194 @@ public class Main {
         //app.testSimpleCacheDB();
         //app.testDeleteAll();
         //app.testAdd();
-        app.testWebServerAlone();
+        //app.testWebServerAlone();
+        app.testInWeb();
         //app.testWebServer();
     }
+    public void testInWeb() {
+        try {
+            try (WebServerAlone server = new WebServerAlone()) {
+                /////////////// init data objects
+                final Config config = Config.getInstance();
+                final CacheDataSet ds = new CacheDbDataSetImpl();
+                ds.setURL(config.getProperty("dbUrl"));
+                ds.setUsername(config.getProperty("dbUser"));
+                ds.setPassword(config.getProperty("dbPass"));
+
+                ds.setPageSize(5);
+                ds.setCommand("SELECT row_id as id, name as full_name FROM test");
+                ds.setRowIdColumnIndex(0);
+                ds.setRowIdColumnName("row_id");
+                List<String> cols = new ArrayList<String>();
+                cols.add("row_id");
+                cols.add("name");
+                ds.setRealColumnNames(cols);
+                ds.execute();
+                /////////////
+                // shutdown hook
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                    public void run() {
+                        logger.info("In shutdown hook");
+                        try {
+                            ds.release();
+                            server.close();
+                        } catch(Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }, "Shutdown-thread"));
+                //~ shutdown hook
+                server.setRequestProcessor(new RequestProcessor() {
+                    @Override
+                    public void process(BufferedReader in, PrintWriter out) throws IOException {
+                        StringBuilder payload = new StringBuilder();
+                        while(in.ready()){
+                            payload.append((char) in.read());
+                        }
+                        logger.info("Payload data is: "+payload.toString());
+                        out.print(payload);
+                    }
+
+                    @Override
+                    public void process(JSONObject in, PrintWriter out) throws IOException {
+                        String action = in.getString("action");
+                        boolean actionResult = false;
+                        if (action.equals("first")) {
+                            actionResult = ds.first();
+                        } else if (action.equals("last")) {
+                            actionResult = ds.last();
+                        } else if (action.equals("next")) {
+                            actionResult = ds.next(false);
+                        } else if (action.equals("previous")) {
+                            actionResult = ds.previous(false);
+                        } else if (action.equals("next_auto")) {
+                            actionResult = ds.next(true);
+                        } else if (action.equals("previous_auto")) {
+                            actionResult = ds.previous(true);
+                        } else if (action.equals("next_page")) {
+                            actionResult = ds.nextPage();
+                        } else if (action.equals("prev_page")) {
+                            actionResult = ds.prevPage();
+                        }
+
+                        JSONObject res = new JSONObject();
+                        res.put("action_result", actionResult);
+                        /// print results
+                        ArrayList<JSONObject> jsonArrayColumnData = new ArrayList<JSONObject>();
+                        RowHeader header = ds.getRowHeader();
+                        for (RowHeaderItem item : header.getHeaderItems()) {
+                            //logger.info("HeaderItem: |" + item.getColumnName() + "|" + item.getRealTableColumnName() + "|" + item.getTableName());
+                            JSONObject jsonItem = new JSONObject();
+                            jsonItem.put("column_name", item.getColumnName());
+                            jsonItem.put("table_column_name", item.getRealTableColumnName());
+                            jsonItem.put("table_name", item.getTableName());
+                            jsonArrayColumnData.add(jsonItem);
+                        }
+                        res.put("column_info", jsonArrayColumnData);
+
+                        ArrayList<JSONObject> jsonArrayRowData = new ArrayList<JSONObject>();
+                        for (int i = 0; i < ds.getLoadedRecords(); i++) {
+                            JSONObject rowItem = new JSONObject();
+
+                            int j = 0;
+                            for (RowHeaderItem h : ds.getRowHeader().getHeaderItems()) {
+//                                s.append(h.getColumnName());
+//                                s.append("(");
+//                                //s.append(1);
+//                                s.append(d.getRowByIndex(i).getCell(j).getValue());
+//                                s.append(")");
+//                                s.append("|");
+//                                rowItem.put("column_name", h.getColumnName());
+//                                rowItem.put("value", ds.getRowByIndex(i).getCell(j).getValue());
+                                rowItem.put(h.getColumnName(), ds.getRowByIndex(i).getCell(j).getValue());
+                                j++;
+                            }
+                            jsonArrayRowData.add(rowItem);
+//                            if (i == ds.getActiveRecordIndex()) {
+//                                logger.info("----->[" + s.toString() + "] *");
+//                            } else {
+//                                logger.info("----->[" + s.toString() + "]");
+//                            }
+                        }
+                        res.put("active_row", ds.getActiveRecordIndex());
+                        res.put("data_row", jsonArrayRowData);
+                        //StringBuilder payload = new StringBuilder();
+                        //payload.append("{}");
+                        //logger.info("Payload data is json: "+payload.toString());
+                        //out.print(payload);
+                        logger.info("Response:" + res.toString());
+                        out.print(res.toString());
+                    }
+
+                    @Override
+                    public void process(String in, PrintWriter out) throws IOException {
+                        StringBuilder payload = new StringBuilder();
+                        payload.append("string");
+                        logger.info("Payload data is: "+payload.toString());
+                        out.print(payload);
+                    }
+                });
+                server.run();
+            }
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    @Deprecated
     public void testWebServerAlone() {
         try {
             try (WebServerAlone server = new WebServerAlone()) {
                 server.setRequestProcessor(new RequestProcessor() {
                     @Override
                     public void process(BufferedReader in, PrintWriter out) throws IOException {
-                        String line;
-                        while ((line = in.readLine()) != null) {
-                            if (line.length() == 0)
-                                break;
-                            out.print("BODY:" + line + "\r\n");
+                        StringBuilder payload = new StringBuilder();
+                        while(in.ready()){
+                            payload.append((char) in.read());
                         }
+                        logger.info("Payload data is: "+payload.toString());
+                        out.print(payload);
+//                        String line;
+//                        while ((line = in.readLine()) != null) {
+//                            if (line.length() == 0)
+//                                break;
+//                            logger.info(line + "\\r\\n");
+//                            out.print("BODY:" + line + "\r\n");
+//                        }
+                        /*
+                        String headerLine = null;
+                        while((headerLine = in.readLine()).length() != 0){
+                            logger.info("Header:" + headerLine);
+                        }
+
+                        StringBuilder payload = new StringBuilder();
+                        while(in.ready()){
+                            payload.append((char) in.read());
+                        }
+                        logger.info("Payload data is: "+payload.toString());
+                        */
+                        //out.print("BODY:" + "FROM CLIENT" + "\r\n");
+                        //out.print("\r\n");
+                        //out.print(out.)
+                    }
+
+                    @Override
+                    public void process(JSONObject in, PrintWriter out) throws IOException {
+//                        StringBuilder payload = new StringBuilder();
+//                        while(in.ready()){
+//                            payload.append((char) in.read());
+//                        }
+                        StringBuilder payload = new StringBuilder();
+                        payload.append("{}");
+                        logger.info("Payload data is json: "+payload.toString());
+                        out.print(payload);
+                    }
+
+                    @Override
+                    public void process(String in, PrintWriter out) throws IOException {
+                        StringBuilder payload = new StringBuilder();
+                        payload.append("string");
+                        logger.info("Payload data is: "+payload.toString());
+                        out.print(payload);
                     }
                 });
                 server.run();
