@@ -1,5 +1,6 @@
 package org.dovnard.exp.db.cachedataset;
 
+import org.dovnard.exp.util.GenerateShortUUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,8 +201,13 @@ public class CacheDbDataSetImpl implements CacheDataSet {
     public boolean add() {
         Row row = new Row();
         row.setMarkedNew(true);
+        int colIdx = 0;
         for (String cn : header.getColumnNames()) {
-            row.addCellData(null);
+            if (colIdx == rowIdColumnIndex)
+                row.addCellData(GenerateShortUUID.next());
+            else
+                row.addCellData(null);
+            colIdx++;
         }
         /*if (activeRowIndex == -1) {
             if (dataSet.size() > 0) {

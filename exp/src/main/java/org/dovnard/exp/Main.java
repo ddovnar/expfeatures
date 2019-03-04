@@ -119,6 +119,9 @@ public class Main {
                                 ds.setValue(key, data.get(key).toString());
                             }
                             actionResult = ds.save();
+                        } else if (action.equals("add")) {
+                            actionResult = ds.add();
+
                         }
 
                         JSONObject res = new JSONObject();
@@ -141,18 +144,23 @@ public class Main {
                             JSONObject rowItem = new JSONObject();
 
                             int j = 0;
+                            StringBuilder s = new StringBuilder();
                             for (RowHeaderItem h : ds.getRowHeader().getHeaderItems()) {
-//                                s.append(h.getColumnName());
-//                                s.append("(");
-//                                //s.append(1);
-//                                s.append(d.getRowByIndex(i).getCell(j).getValue());
-//                                s.append(")");
-//                                s.append("|");
+                                s.append(h.getColumnName());
+                                s.append("(");
+                                //s.append(1);
+                                s.append(ds.getRowByIndex(i).getCell(j).getValue());
+                                s.append(")");
+                                s.append("|");
 //                                rowItem.put("column_name", h.getColumnName());
 //                                rowItem.put("value", ds.getRowByIndex(i).getCell(j).getValue());
-                                rowItem.put(h.getColumnName(), ds.getRowByIndex(i).getCell(j).getValue());
+                                if (ds.getRowByIndex(i).getCell(j).getValue() == null)
+                                    rowItem.put(h.getColumnName(), "");
+                                else
+                                    rowItem.put(h.getColumnName(), ds.getRowByIndex(i).getCell(j).getValue());
                                 j++;
                             }
+                            logger.info("----->[" + s.toString() + "]");
                             jsonArrayRowData.add(rowItem);
 //                            if (i == ds.getActiveRecordIndex()) {
 //                                logger.info("----->[" + s.toString() + "] *");
