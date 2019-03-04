@@ -69,7 +69,7 @@ public class WebServerAlone implements AutoCloseable {
 
                     out.print("HTTP/1.1 200 \r\n");
                     if (contentType == HttpContentType.JSON)
-                        out.print("Content-Type: application/json\r\n");
+                        out.print("Content-Type: application/json; charset=utf-8\r\n");
                     else
                         out.print("Content-Type: text/plain\r\n"); // The type of data
                     //out.print("Connection: close\r\n"); // Will close stream

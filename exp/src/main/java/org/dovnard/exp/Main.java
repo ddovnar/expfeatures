@@ -1,11 +1,13 @@
 package org.dovnard.exp;
 
+import com.carrotsearch.sizeof.RamUsageEstimator;
 import org.dovnard.exp.console.CommandExec;
 import org.dovnard.exp.console.ConsoleRunner;
 import org.dovnard.exp.db.cachedataset.CacheDataSet;
 import org.dovnard.exp.db.cachedataset.CacheDbDataSetImpl;
 import org.dovnard.exp.db.cachedataset.RowHeader;
 import org.dovnard.exp.db.cachedataset.RowHeaderItem;
+import org.dovnard.exp.util.MemoryInfo;
 import org.dovnard.exp.web.RequestProcessor;
 import org.dovnard.exp.web.WebServer;
 import org.dovnard.exp.web.WebServerAlone;
@@ -100,6 +102,9 @@ public class Main {
                             actionResult = ds.nextPage();
                         } else if (action.equals("prev_page")) {
                             actionResult = ds.prevPage();
+                        } else if (action.equals("gc")) {
+                            Runtime.getRuntime().gc();
+                            actionResult = true;
                         }
 
                         JSONObject res = new JSONObject();
@@ -147,6 +152,13 @@ public class Main {
                         //payload.append("{}");
                         //logger.info("Payload data is json: "+payload.toString());
                         //out.print(payload);
+
+                        JSONObject memory_info = new JSONObject();
+                        getMemoryInfo(memory_info);
+                        res.put("memory_info", memory_info);
+
+                        res.put("object_size", RamUsageEstimator.sizeOf(ds));
+
                         logger.info("Response:" + res.toString());
                         out.print(res.toString());
                     }
@@ -164,6 +176,14 @@ public class Main {
         } catch(Exception ex) {
             ex.printStackTrace();
         }
+    }
+    private void getMemoryInfo(JSONObject memory_info) {
+        memory_info.put("free_memory", MemoryInfo.getFreeMemory());
+        memory_info.put("allocated", MemoryInfo.getAllocatedMemory());
+        memory_info.put("total_free", MemoryInfo.getTotalFreeMemory());
+        memory_info.put("max", MemoryInfo.getMaxMemory());
+        memory_info.put("used", MemoryInfo.getUsedMemory());
+        logger.info("Memory info: " + memory_info.toString());
     }
     @Deprecated
     public void testWebServerAlone() {
