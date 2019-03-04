@@ -85,6 +85,10 @@ public class Main {
                     @Override
                     public void process(JSONObject in, PrintWriter out) throws IOException {
                         String action = in.getString("action");
+                        JSONObject data = in.getJSONObject("data");
+
+                        logger.info("Request data:" + data.toString());
+
                         boolean actionResult = false;
                         if (action.equals("first")) {
                             actionResult = ds.first();
@@ -105,6 +109,16 @@ public class Main {
                         } else if (action.equals("gc")) {
                             Runtime.getRuntime().gc();
                             actionResult = true;
+                        } else if (action.equals("delete")) {
+                            actionResult = ds.delete();
+                        } else if (action.equals("save")) {
+                            Iterator<String> keys = data.keys();
+                            while(keys.hasNext()) {
+                                String key = keys.next();
+                                logger.info("data[" + key + "]=" + data.get(key));
+                                ds.setValue(key, data.get(key).toString());
+                            }
+                            actionResult = ds.save();
                         }
 
                         JSONObject res = new JSONObject();
